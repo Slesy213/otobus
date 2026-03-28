@@ -18,7 +18,6 @@
       background: black;
     }
 
-    /* Arka plan video */
     #bg-video {
       position: fixed;
       top: 0;
@@ -29,18 +28,13 @@
       z-index: -2;
     }
 
-    /* Karartma */
     .overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      inset: 0;
       background: rgba(0, 0, 0, 0.45);
       z-index: -1;
     }
 
-    /* Yazı */
     .content {
       position: relative;
       z-index: 2;
@@ -50,6 +44,8 @@
       justify-content: center;
       text-align: center;
       pointer-events: none;
+      flex-direction: column;
+      gap: 14px;
     }
 
     .gecmis-yazi {
@@ -62,6 +58,18 @@
         0 0 20px darkred,
         0 0 40px red;
       animation: pulseRed 1.5s infinite ease-in-out;
+      letter-spacing: 1px;
+    }
+
+    .alt-yazi {
+      color: #ff2a2a;
+      font-size: 14px;
+      font-weight: bold;
+      text-shadow:
+        0 0 4px red,
+        0 0 8px crimson,
+        0 0 18px darkred;
+      animation: blinkText 1.2s infinite alternate;
       letter-spacing: 1px;
     }
 
@@ -92,33 +100,45 @@
           0 0 20px darkred;
       }
     }
+
+    @keyframes blinkText {
+      from {
+        opacity: 0.55;
+        transform: scale(1);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1.06);
+      }
+    }
   </style>
 </head>
-
 <body>
 
-  <!-- Video -->
   <video autoplay muted loop id="bg-video">
     <source src="video.mp4" type="video/mp4">
   </video>
 
-  <!-- Karartma -->
   <div class="overlay"></div>
 
-  <!-- Müzik -->
   <audio autoplay loop id="music">
     <source src="sarkı.mp3" type="audio/mpeg">
   </audio>
 
-  <!-- Yazı -->
   <div class="content">
     <div class="gecmis-yazi">Gecmis Olsun Gardas</div>
+    <div class="alt-yazi">Benden Kurtulamazsın (Slesy)</div>
   </div>
 
   <script>
     document.addEventListener("click", () => {
       const music = document.getElementById("music");
-      music.play();
+      music.play().catch(() => {});
+    });
+
+    window.addEventListener("beforeunload", function (e) {
+      e.preventDefault();
+      e.returnValue = "";
     });
   </script>
 
