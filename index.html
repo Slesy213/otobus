@@ -4,18 +4,21 @@
 <body>
 <center>
 <h1 style="color:red;">REXGUN PANEL</h1>
-<button onclick="fetch('/create')">LINK OLUSTUR</button>
+<button onclick="createLink()">LINK OLUSTUR</button>
 <div id="link"></div>
 <div id="log"></div>
 <script>
-let currentPin = Math.floor(10000000+Math.random()*90000000);
-function addLog(msg){let d=document.getElementById('log');d.innerHTML+=`[${new Date().toLocaleTimeString()}] ${msg}<br>`;}
-async function createLink(){
-    let pin=currentPin;
-    addLog(`PIN: ${pin}`);
-    let link="https://github.com/SENIN_KULLANICI_ADIN/REPO_ADIN/releases/download/v1.0/ScannerSetup.exe";
-    document.getElementById('link').innerHTML=`<input value='${link}' size=50><button onclick='navigator.clipboard.writeText("${link}")'>KOPYALA</button><br>PIN: <strong style="color:red;">${pin}</strong>`;
-    addLog(`Link olusturuldu: ${link}`);
+let currentPin = Math.floor(10000000 + Math.random() * 90000000);
+function addLog(msg) {
+    let d = document.getElementById('log');
+    d.innerHTML += '[' + new Date().toLocaleTimeString() + '] ' + msg + '<br>';
+}
+function createLink() {
+    let pin = currentPin;
+    addLog('PIN: ' + pin);
+    let link = "https://github.com/SENIN_KULLANICI_ADIN/REPO_ADIN/releases/download/v1.0/ScannerSetup.exe";
+    document.getElementById('link').innerHTML = '<input value="' + link + '" size="50"><button onclick="navigator.clipboard.writeText(\'' + link + '\')">KOPYALA</button><br><br>PIN: <strong style="color:red;">' + pin + '</strong>';
+    addLog('Link olusturuldu: ' + link);
 }
 </script>
 </center>
