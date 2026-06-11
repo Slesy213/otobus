@@ -2,70 +2,233 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Pin Doğrulama Sistemi</title>
+    <title>Rexgun Scanner Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             background: #0a0a0a;
             font-family: 'Courier New', monospace;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
+            padding: 20px;
         }
         .container {
-            background: #1a1a1a;
-            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #111;
+            border: 2px solid #ff0000;
             border-radius: 10px;
-            border: 1px solid #ff0000;
-            text-align: center;
-            width: 400px;
+            padding: 30px;
         }
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            background: #2a2a2a;
-            border: 1px solid #ff0000;
-            color: #00ff00;
-            font-family: monospace;
-            font-size: 18px;
-            text-align: center;
-        }
+        h1 { color: #ff0000; text-align: center; }
         button {
             background: #ff0000;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 15px 30px;
+            font-size: 18px;
             cursor: pointer;
+            margin: 10px;
+            border-radius: 5px;
             font-weight: bold;
-            margin: 5px;
         }
         button:hover { background: #cc0000; }
-        #notification {
-            margin-top: 20px;
-            padding: 10px;
-            background: #2a2a2a;
-            min-height: 50px;
-            color: #00ff00;
+        .link-box {
+            background: #222;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid #ff0000;
+            word-break: break-all;
+            display: none;
         }
-        .red-alert { color: #ff0000; font-weight: bold; font-size: 20px; }
-        .hidden { display: none; }
+        .link-box input {
+            width: 80%;
+            padding: 10px;
+            background: #333;
+            border: none;
+            color: #0f0;
+            font-family: monospace;
+        }
+        .pin-area {
+            margin-top: 30px;
+            padding: 20px;
+            background: #1a1a1a;
+            display: none;
+        }
+        .log-area {
+            margin-top: 30px;
+            background: #000;
+            padding: 15px;
+            height: 300px;
+            overflow-y: scroll;
+            font-size: 12px;
+            border: 1px solid #333;
+        }
+        .log-entry { border-bottom: 1px solid #333; padding: 5px; margin: 5px 0; }
+        .cheat-found { color: #ff0000; font-weight: bold; }
+        .clean { color: #00ff00; }
+        input {
+            background: #222;
+            border: 1px solid #ff0000;
+            color: white;
+            padding: 10px;
+            width: 200px;
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2 style="color:#ff0000;">🔐 PIN DOĞRULAMA</h2>
-    <p style="color:#888;">Dosyayı indirdikten sonra PIN kodunuzu girin:</p>
-    <input type="text" id="pinInput" placeholder="PIN KODU" maxlength="8">
-    <button id="verifyBtn">DOĞRULA</button>
-    <button id="genPinBtn" style="background:#333;">YENİ PIN OLUŞTUR</button>
-    <div id="notification">
-        ⚡ Bekleniyor...
+    <h1>🔴 REXGUN SCANNER PANEL</h1>
+    
+    <div style="text-align: center;">
+        <button id="createLinkBtn">📎 LİNK OLUŞTUR</button>
+    </div>
+    
+    <div class="link-box" id="linkBox">
+        <p>⬇️ KULLANICIYA GÖNDERİLECEK LİNK:</p>
+        <input type="text" id="downloadLink" readonly>
+        <button id="copyBtn">KOPYALA</button>
+    </div>
+    
+    <div class="pin-area" id="pinArea">
+        <h3 style="color:#ff0000;">PIN YÖNETİMİ</h3>
+        <p>Üretilen PIN: <strong id="currentPin" style="color:#0f0; font-size:24px;">-----</strong></p>
+        <p>Kullanıcının girdiği PIN: <input type="text" id="userPinInput" placeholder="PIN girin"></p>
+        <button id="verifyUserPinBtn">PIN DOĞRULA</button>
+        <button id="genNewPinBtn">YENİ PIN ÜRET</button>
+        <div id="pinStatus" style="margin-top:10px;"></div>
+    </div>
+    
+    <div>
+        <h3>📡 LOG KANALI (CANLI)</h3>
+        <div class="log-area" id="logArea">
+            <div class="log-entry">[SİSTEM] Panel hazır. Link oluşturmak için butona tıkla.</div>
+        </div>
     </div>
 </div>
-<script src="scanner_module.js"></script>
-<script src="index.js"></script>
+
+<script>
+    // ============ GLOBAL DEĞİŞKENLER ============
+    let currentGeneratedLink = null;
+    let currentPin = null;
+    let currentSessionId = null;
+    
+    // Log ekleme fonksiyonu
+    function addLog(message, isCheat = false) {
+        const logArea = document.getElementById('logArea');
+        const logDiv = document.createElement('div');
+        logDiv.className = 'log-entry';
+        if (isCheat) {
+            logDiv.innerHTML = `<span class="cheat-found">🚨 ${message}</span>`;
+        } else if (message.includes('TEMİZ') || message.includes('başarılı')) {
+            logDiv.innerHTML = `<span class="clean">✅ ${message}</span>`;
+        } else {
+            logDiv.innerHTML = `<span>📌 ${new Date().toLocaleTimeString()} - ${message}</span>`;
+        }
+        logArea.appendChild(logDiv);
+        logArea.scrollTop = logArea.scrollHeight;
+        
+        // Webhook gönder (isteğe bağlı Discord webhook)
+        sendToWebhook(message, isCheat);
+    }
+    
+    // Discord webhook'a log gönder
+    function sendToWebhook(message, isCheat) {
+        const webhookURL = "https://discord.com/api/webhooks/SAKLANACAK/WEBHOOK_ID"; // KENDİ WEBHOOK UNU EKLE
+        const payload = {
+            content: `[REXGUN SCANNER] ${isCheat ? '🔴 HİLE TESPİTİ: ' : '📝 '} ${message}`
+        };
+        fetch(webhookURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(e => console.log("Webhook hatası:", e));
+    }
+    
+    // Rastgele session ID
+    function generateSessionId() {
+        return 'xxxx-xxxx-xxxx-xxxx'.replace(/x/g, () => Math.random().toString(36).charAt(2));
+    }
+    
+    // Link oluştur (dinamik indirme linki - GitHub raw kullanarak)
+    function createDownloadLink() {
+        const sessionId = generateSessionId();
+        currentSessionId = sessionId;
+        // GitHub'daki raw scanner dosyasının linki (kendi repo adresinle değiştir)
+        const baseRaw = "https://raw.githubusercontent.com/Slesy213/otobus/main/scanner_payload.exe";
+        // Aslında .exe değil, electron build edilmiş dosya olmalı. Veya direkt .bat/.ps1 payload
+        // Geçici çözüm: Kendi sunucuna yükle veya GitHub release kullan
+        const generatedUrl = `https://raw.githubusercontent.com/Slesy213/otobus/main/Rexgun_Scanner_${sessionId}.exe`;
+        currentGeneratedLink = generatedUrl;
+        document.getElementById('downloadLink').value = generatedUrl;
+        document.getElementById('linkBox').style.display = 'block';
+        addLog(`🔗 Yeni indirme linki oluşturuldu: ${generatedUrl}`);
+        return generatedUrl;
+    }
+    
+    // PIN üret
+    function generatePin() {
+        return Math.floor(10000000 + Math.random() * 90000000).toString();
+    }
+    
+    // Yeni PIN oluştur ve göster
+    function refreshPin() {
+        currentPin = generatePin();
+        document.getElementById('currentPin').innerText = currentPin;
+        document.getElementById('pinArea').style.display = 'block';
+        addLog(`🔑 Yeni PIN üretildi: ${currentPin}`);
+        sessionStorage.setItem('expectedPin', currentPin);
+    }
+    
+    // Kullanıcının PIN'ini doğrula
+    function verifyUserPin() {
+        const userPin = document.getElementById('userPinInput').value;
+        if (!currentPin) {
+            document.getElementById('pinStatus').innerHTML = '<span style="color:red;">Önce PIN oluştur!</span>';
+            return;
+        }
+        if (userPin === currentPin) {
+            document.getElementById('pinStatus').innerHTML = '<span style="color:green;">✅ PIN doğrulandı! Tarama başlatılıyor...</span>';
+            addLog(`✅ PIN doğrulandı (${userPin}) - Tarama başlatıldı`);
+            // Tarama başlatma sinyali (mock)
+            simulateScan();
+        } else {
+            document.getElementById('pinStatus').innerHTML = '<span style="color:red;">❌ Hatalı PIN!</span>';
+            addLog(`❌ Hatalı PIN denemesi: ${userPin} (beklenen: ${currentPin})`);
+        }
+    }
+    
+    // Simüle edilmiş tarama (gerçek scanner electron ile yapılacak, burada test)
+    function simulateScan() {
+        addLog("🔍 Tarama başladı...");
+        setTimeout(() => {
+            const foundCheats = ["CheatEngine.exe", "Nexor.exe", "FiveM_Injector.dll"];
+            const randomFound = foundCheats.filter(() => Math.random() > 0.5);
+            if (randomFound.length > 0) {
+                addLog(`🚨 HİLE TESPİT EDİLDİ: ${randomFound.join(', ')}`, true);
+            } else {
+                addLog(`✅ TEMİZ sistem, hile bulunamadı.`, false);
+            }
+        }, 3000);
+    }
+    
+    // Kopyalama
+    function copyLink() {
+        const input = document.getElementById('downloadLink');
+        input.select();
+        document.execCommand('copy');
+        addLog("📋 Link panoya kopyalandı");
+    }
+    
+    // Event listenerlar
+    document.getElementById('createLinkBtn').addEventListener('click', () => {
+        createDownloadLink();
+        refreshPin();
+    });
+    document.getElementById('copyBtn').addEventListener('click', copyLink);
+    document.getElementById('verifyUserPinBtn').addEventListener('click', verifyUserPin);
+    document.getElementById('genNewPinBtn').addEventListener('click', refreshPin);
+    
+    addLog("✅ Rexgun Scanner panel aktif");
+</script>
 </body>
 </html>
