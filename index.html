@@ -1,26 +1,40 @@
 <!DOCTYPE html>
 <html>
-<head><title>Rexgun Panel</title><style>body{background:#000;color:#0f0;font-family:monospace;}</style></head>
+<head>
+    <title>Rexgun Loglar</title>
+    <meta charset="UTF-8">
+    <style>
+        body { background: #0a0a0a; color: #0f0; font-family: monospace; padding: 20px; }
+        h1 { color: red; text-align: center; }
+        .log { border: 1px solid red; margin: 10px 0; padding: 10px; background: #111; }
+        .cheat { color: red; font-weight: bold; }
+        .clean { color: green; }
+        .time { color: yellow; font-size: 12px; }
+    </style>
+</head>
 <body>
-<center>
-<h1 style="color:red;">REXGUN PANEL</h1>
-<button onclick="createLink()">LINK OLUSTUR</button>
-<div id="link"></div>
-<div id="log"></div>
-<script>
-let currentPin = Math.floor(10000000 + Math.random() * 90000000);
-function addLog(msg) {
-    let d = document.getElementById('log');
-    d.innerHTML += '[' + new Date().toLocaleTimeString() + '] ' + msg + '<br>';
-}
-function createLink() {
-    let pin = currentPin;
-    addLog('PIN: ' + pin);
-    let link = "https://github.com/Slesy213/dowland/releases/download/v1.0/rexgun-scanner.Setup.1.0.0.exe";
-    document.getElementById('link').innerHTML = '<input value="' + link + '" size="70"><button onclick="navigator.clipboard.writeText(\'' + link + '\')">KOPYALA</button><br><br>PIN: <strong style="color:red;">' + pin + '</strong>';
-    addLog('Link olusturuldu: ' + link);
-}
-</script>
-</center>
+    <h1>REXGUN SCANNER LOGLARI</h1>
+    <div id="logs"></div>
+    <script>
+        fetch('logs.json')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('logs');
+                container.innerHTML = '';
+                data.logs.reverse().forEach(log => {
+                    const div = document.createElement('div');
+                    div.className = 'log';
+                    div.innerHTML = `
+                        <div class="time">${log.time}</div>
+                        <div>Bilgisayar: ${log.pc}</div>
+                        <div>Kullanıcı: ${log.user}</div>
+                        <div>IP: ${log.ip}</div>
+                        <div class="${log.cheat ? 'cheat' : 'clean'}">Sonuç: ${log.result}</div>
+                        <div>Detay: ${log.details}</div>
+                    `;
+                    container.appendChild(div);
+                });
+            });
+    </script>
 </body>
 </html>
